@@ -2,26 +2,22 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ "main" ] # Сборка будет запускаться при каждом пуше в ветку main
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Скачиваем код из репозитория
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Настраиваем QEMU (нужно для мультиархитектурных сборок, например под ARM)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # 3. Настраиваем Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 4. Авторизуемся в GitHub Packages (токен генерируется автоматически)
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -29,15 +25,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Собираем образ и отправляем его в реестр
+      # НАВОДИМ ПОРЯДОК С РЕГИСТРОМ БУКВ:
+      # Этот шаг берет имя вашего репозитория, делает его маленькими буквами 
+      # и записывает в переменную "repository"
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v5
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: true # Теперь образ автоматически отправится в облако
-          tags: ghcr.io/${{ github.repository }}:latest
-          platforms: linux/arm64 # Укажите нужные вам архитектуры
-          # Включаем магию кэширования:
-          cache-from: type=gha # Откуда брать кэш (из хранилища GitHub Actions)
-          cache-to: type=gha,mode=max # Куда сохранять новый кэш после сборки
+          push: true
+          # Используем переменную ${{ env.GITHUB_REPOSITORY_SLUG_CS }} 
+          # Она гарантированно будет состоять только из маленьких букв
+          tags: ghcr.io/${{ env.GITHUB_REPOSITORY_SLUG_CS }}:latest
+          platforms: linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
