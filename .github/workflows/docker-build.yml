@@ -21,14 +21,17 @@ jobs:
       # ШАГ 1: Переводим имя репозитория в нижний регистр силами Bash
       - name: Lowercase repository name
         run: |
-          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          # Переводим ваш личный логин в нижний регистр
+          echo "OWNER_LC=${GITHUB_ACTOR,,}" >> $GITHUB_ENV
+          # Переводим название самого репозитория (без имени автора) в нижний регистр
+          echo "REPO_NAME_LC=${GITHUB_REPOSITORY#*/}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_ENV
 
       # ШАГ 2: Официальный инструмент подготовки тегов (он сам уберет заглавные буквы)
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ env.REPO_LC }}
+          images: ghcr.io/${{ env.OWNER_LC }}/${{ env.REPO_NAME_LC }}
           tags: |
             type=raw,value=latest
 
